@@ -1081,7 +1081,7 @@ impl<'state, 'input> Recorder<'state, 'input> {
             // Render quit dialog if the user made changes.
             (None, Event::QuitCancel | Event::QuitInterrupt) => {
                 let num_commit_messages = self.num_user_commit_messages()?;
-                let num_changed_files = self.num_user_file_changes()?;
+                let num_changed_files = self.num_user_file_changes();
                 if num_commit_messages > 0 || num_changed_files > 0 {
                     StateUpdate::SetQuitDialog(Some(QuitDialog {
                         num_commit_messages,
@@ -1267,25 +1267,13 @@ impl<'state, 'input> Recorder<'state, 'input> {
             .sum())
     }
 
-    fn num_user_file_changes(&self) -> Result<usize, RecordError> {
+    fn num_user_file_changes(&self) -> usize {
         let RecordState {
             files,
             commits: _,
             is_read_only: _,
         } = &self.state;
-        let mut result = 0;
-        for (file_idx, _file) in files.iter().enumerate() {
-            match self.file_tristate(FileKey {
-                commit_idx: self.focused_commit_idx,
-                file_idx,
-            })? {
-                Tristate::False => {}
-                Tristate::Partial | Tristate::True => {
-                    result += 1;
-                }
-            }
-        }
-        Ok(result)
+        files.iter().filter(|file| file.is_changed()).count()
     }
 
     fn all_selection_keys(&self) -> Vec<SelectionKey> {
@@ -1832,7 +1820,7 @@ impl<'state, 'input> Recorder<'state, 'input> {
             }
             SelectionKey::Line(line_key) => {
                 self.visit_line(line_key, |line| {
-                    line.is_checked = !line.is_checked;
+                    line.is_checked.current = !line.is_checked.current;
                 })?;
             }
         }
@@ -3041,7 +3029,7 @@ impl Component for SectionView<'_> {
                             use_unicode: *use_unicode,
                             id: ComponentId::ToggleBox(SelectionKey::Line(line_key)),
                             icon_style: TristateIconStyle::Check,
-                            tristate: Tristate::from(*is_checked),
+                            tristate: Tristate::from(is_checked.current),
                             is_focused,
                             is_read_only: *is_read_only,
                         };
@@ -3089,7 +3077,7 @@ impl Component for SectionView<'_> {
                     use_unicode: *use_unicode,
                     id: ComponentId::ToggleBox(selection_key),
                     icon_style: TristateIconStyle::Check,
-                    tristate: Tristate::from(*is_checked),
+                    tristate: Tristate::from(is_checked.current),
                     is_focused,
                     is_read_only: *is_read_only,
                 };
@@ -3128,7 +3116,7 @@ impl Component for SectionView<'_> {
                     use_unicode: *use_unicode,
                     id: ComponentId::ToggleBox(SelectionKey::Section(section_key)),
                     icon_style: TristateIconStyle::Check,
-                    tristate: Tristate::from(*is_checked),
+                    tristate: Tristate::from(is_checked.current),
                     is_focused,
                     is_read_only: *is_read_only,
                 };

@@ -254,14 +254,14 @@ impl File<'_> {
                 Section::Unchanged { .. }
                 | Section::Changed { .. }
                 | Section::FileMode {
-                    is_checked: false,
+                    is_checked: IsChecked { current: false, .. },
                     before: _,
                     after: _,
                 }
                 | Section::Binary { .. } => None,
 
                 Section::FileMode {
-                    is_checked: true,
+                    is_checked: IsChecked { current: true, .. },
                     before: _,
                     after,
                 } => Some(*after),
@@ -297,7 +297,7 @@ impl File<'_> {
                             change_type,
                             line,
                         } = line;
-                        match (change_type, is_checked) {
+                        match (change_type, is_checked.current) {
                             (ChangeType::Added, true) | (ChangeType::Removed, false) => {
                                 acc_selected.push_str(line);
                             }
@@ -313,9 +313,9 @@ impl File<'_> {
                     before,
                     after,
                 } => {
-                    if *is_checked && after == &FileMode::absent() {
+                    if is_checked.current && after == &FileMode::absent() {
                         acc_selected = SelectedContents::Absent;
-                    } else if !is_checked && before == &FileMode::absent() {
+                    } else if !is_checked.current && before == &FileMode::absent() {
                         acc_unselected = SelectedContents::Absent;
                     }
                 }
@@ -329,7 +329,7 @@ impl File<'_> {
                         old_description: old_description.clone(),
                         new_description: new_description.clone(),
                     };
-                    if *is_checked {
+                    if is_checked.current {
                         acc_selected = selected_contents;
                         acc_unselected = SelectedContents::Unchanged;
                     } else {
@@ -340,6 +340,30 @@ impl File<'_> {
             }
         }
         (acc_selected, acc_unselected)
+    }
+
+    /// Computse whether any checkbox differs from its initial state.
+    pub fn is_changed(&self) -> bool {
+        let Self {
+            old_path: _,
+            path: _,
+            file_mode: _,
+            sections,
+        } = self;
+        sections.iter().any(|section| match section {
+            Section::Unchanged { .. } => false,
+            Section::Changed { lines } => lines.iter().any(|line| line.is_checked.is_changed()),
+            Section::FileMode {
+                is_checked,
+                before: _,
+                after: _,
+            }
+            | Section::Binary {
+                is_checked,
+                old_description: _,
+                new_description: _,
+            } => is_checked.is_changed(),
+        })
     }
 
     /// Get the tristate value of the file. If there are no sections in this
@@ -357,7 +381,7 @@ impl File<'_> {
                 Section::Unchanged { .. } => {}
                 Section::Changed { lines } => {
                     for line in lines {
-                        seen_value = match (seen_value, line.is_checked) {
+                        seen_value = match (seen_value, line.is_checked.current) {
                             (None, is_checked) => Some(is_checked),
                             (Some(true), true) => Some(true),
                             (Some(false), false) => Some(false),
@@ -375,8 +399,8 @@ impl File<'_> {
                     old_description: _,
                     new_description: _,
                 } => {
-                    seen_value = match (seen_value, is_checked) {
-                        (None, is_checked) => Some(*is_checked),
+                    seen_value = match (seen_value, is_checked.current) {
+                        (None, is_checked) => Some(is_checked),
                         (Some(true), true) => Some(true),
                         (Some(false), false) => Some(false),
                         (Some(true), false) | (Some(false), true) => return Tristate::Partial,
@@ -417,6 +441,40 @@ impl File<'_> {
     }
 }
 
+/// The status of a checkbox.
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+pub struct IsChecked {
+    /// Whether a checkbox was initially checked. This is only used for figuring
+    /// out whether to warn when the user is quitting the ui.
+    pub init: bool,
+
+    /// Whether a checkbox is currently checked.
+    pub current: bool,
+}
+
+impl IsChecked {
+    /// The status of a checkbox with the given boolean as both
+    /// initial value and current value.
+    pub fn new(init: bool) -> Self {
+        IsChecked {
+            init,
+            current: init,
+        }
+    }
+
+    /// FOFF
+    pub fn set() -> Self {
+        IsChecked {
+            init: false,
+            current: true,
+        }
+    }
+    fn is_changed(&self) -> bool {
+        self.init != self.current
+    }
+}
+
 /// A section of a file to be rendered and recorded.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -446,7 +504,7 @@ pub enum Section<'a> {
     FileMode {
         /// Whether or not the file mode change was selected for inclusion in
         /// the UI.
-        is_checked: bool,
+        is_checked: IsChecked,
 
         /// The old file mode.
         before: FileMode,
@@ -459,7 +517,7 @@ pub enum Section<'a> {
     Binary {
         /// Whether or not the binary contents change was selected for inclusion
         /// in the UI.
-        is_checked: bool,
+        is_checked: IsChecked,
 
         /// The description of the old binary contents, for use in the UI only.
         old_description: Option<Cow<'a, str>>,
@@ -487,7 +545,7 @@ impl Section<'_> {
             Section::Unchanged { .. } => {}
             Section::Changed { lines } => {
                 for line in lines {
-                    seen_value = match (seen_value, line.is_checked) {
+                    seen_value = match (seen_value, line.is_checked.current) {
                         (None, is_checked) => Some(is_checked),
                         (Some(true), true) => Some(true),
                         (Some(false), false) => Some(false),
@@ -505,8 +563,8 @@ impl Section<'_> {
                 old_description: _,
                 new_description: _,
             } => {
-                seen_value = match (seen_value, is_checked) {
-                    (None, is_checked) => Some(*is_checked),
+                seen_value = match (seen_value, is_checked.current) {
+                    (None, is_checked) => Some(is_checked),
                     (Some(true), true) => Some(true),
                     (Some(false), false) => Some(false),
                     (Some(true), false) | (Some(false), true) => return Tristate::Partial,
@@ -525,14 +583,14 @@ impl Section<'_> {
             Section::Unchanged { .. } => {}
             Section::Changed { lines } => {
                 for line in lines {
-                    line.is_checked = checked;
+                    line.is_checked.current = checked;
                 }
             }
             Section::FileMode { is_checked, .. } => {
-                *is_checked = checked;
+                is_checked.current = checked;
             }
             Section::Binary { is_checked, .. } => {
-                *is_checked = checked;
+                is_checked.current = checked;
             }
         }
     }
@@ -543,14 +601,14 @@ impl Section<'_> {
             Section::Unchanged { .. } => {}
             Section::Changed { lines } => {
                 for line in lines {
-                    line.is_checked = !line.is_checked;
+                    line.is_checked.current = !line.is_checked.current;
                 }
             }
             Section::FileMode { is_checked, .. } => {
-                *is_checked = !*is_checked;
+                is_checked.current = !is_checked.current;
             }
             Section::Binary { is_checked, .. } => {
-                *is_checked = !*is_checked;
+                is_checked.current = !is_checked.current;
             }
         }
     }
@@ -572,7 +630,7 @@ pub enum ChangeType {
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct SectionChangedLine<'a> {
     /// Whether or not this line was selected to be recorded.
-    pub is_checked: bool,
+    pub is_checked: IsChecked,
 
     /// The type of change this line was.
     pub change_type: ChangeType,

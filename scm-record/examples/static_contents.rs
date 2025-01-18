@@ -5,8 +5,8 @@ use std::borrow::Cow;
 use std::path::Path;
 
 use scm_record::{
-    helpers::CrosstermInput, ChangeType, File, RecordError, RecordState, Recorder, Section,
-    SectionChangedLine, SelectedContents,
+    helpers::CrosstermInput, ChangeType, File, IsChecked, RecordError, RecordState, Recorder,
+    Section, SectionChangedLine, SelectedContents,
 };
 
 fn main() {
@@ -24,23 +24,23 @@ fn main() {
                 Section::Changed {
                     lines: vec![
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("before text 1\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("before text 2\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Added,
 
                             line: Cow::Borrowed("after text 1\n"),
                         },
                         SectionChangedLine {
-                            is_checked: false,
+                            is_checked: IsChecked::new(false),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("after text 2\n"),
                         },
@@ -65,22 +65,22 @@ fn main() {
                 Section::Changed {
                     lines: vec![
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("before text 1\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("before text 2\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("after text 1\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("after text 2\n"),
                         },

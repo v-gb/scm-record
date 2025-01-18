@@ -5,8 +5,8 @@ use assert_matches::assert_matches;
 use insta::{assert_debug_snapshot, assert_snapshot};
 use scm_record::helpers::{make_binary_description, TestingInput};
 use scm_record::{
-    ChangeType, Commit, Event, File, FileMode, RecordError, RecordState, Recorder, Section,
-    SectionChangedLine, TestingScreenshot,
+    ChangeType, Commit, Event, File, FileMode, IsChecked, RecordError, RecordState, Recorder,
+    Section, SectionChangedLine, TestingScreenshot,
 };
 
 type TestResult = Result<(), scm_record::RecordError>;
@@ -29,22 +29,22 @@ fn example_contents() -> RecordState<'static> {
                     Section::Changed {
                         lines: vec![
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked::set(),
                                 change_type: ChangeType::Removed,
                                 line: Cow::Borrowed("before text 1\n"),
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked::set(),
                                 change_type: ChangeType::Removed,
                                 line: Cow::Borrowed("before text 2\n"),
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked::set(),
                                 change_type: ChangeType::Added,
                                 line: Cow::Borrowed("after text 1\n"),
                             },
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked::new(false),
                                 change_type: ChangeType::Added,
                                 line: Cow::Borrowed("after text 2\n"),
                             },
@@ -69,22 +69,22 @@ fn example_contents() -> RecordState<'static> {
                     Section::Changed {
                         lines: vec![
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked::set(),
                                 change_type: ChangeType::Removed,
                                 line: Cow::Borrowed("before text 1\n"),
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked::set(),
                                 change_type: ChangeType::Removed,
                                 line: Cow::Borrowed("before text 2\n"),
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked::set(),
                                 change_type: ChangeType::Added,
                                 line: Cow::Borrowed("after text 1\n"),
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked::set(),
                                 change_type: ChangeType::Added,
                                 line: Cow::Borrowed("after text 2\n"),
                             },
@@ -550,12 +550,12 @@ fn test_enter_next() -> TestResult {
                 sections: vec![Section::Changed {
                     lines: vec![
                         SectionChangedLine {
-                            is_checked: false,
+                            is_checked: IsChecked::new(false),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("world\n"),
                         },
                         SectionChangedLine {
-                            is_checked: false,
+                            is_checked: IsChecked::new(false),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("hello\n"),
                         },
@@ -569,12 +569,12 @@ fn test_enter_next() -> TestResult {
                 sections: vec![Section::Changed {
                     lines: vec![
                         SectionChangedLine {
-                            is_checked: false,
+                            is_checked: IsChecked::new(false),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("world\n"),
                         },
                         SectionChangedLine {
-                            is_checked: false,
+                            is_checked: IsChecked::new(false),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("hello\n"),
                         },
@@ -639,7 +639,7 @@ fn test_file_mode_change() -> TestResult {
                 path: Cow::Borrowed(Path::new("bar")),
                 file_mode: None,
                 sections: vec![Section::FileMode {
-                    is_checked: false,
+                    is_checked: IsChecked::new(false),
                     before: FileMode(0o100644),
                     after: FileMode(0o100755),
                 }],
@@ -696,7 +696,10 @@ fn test_file_mode_change() -> TestResult {
                 file_mode: None,
                 sections: [
                     FileMode {
-                        is_checked: true,
+                        is_checked: IsChecked {
+                            init: false,
+                            current: true,
+                        },
                         before: FileMode(
                             33188,
                         ),
@@ -762,7 +765,7 @@ fn test_abbreviate_unchanged_sections() -> TestResult {
                 },
                 Section::Changed {
                     lines: vec![SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Added,
                         line: Cow::Borrowed("changed\n"),
                     }],
@@ -774,7 +777,7 @@ fn test_abbreviate_unchanged_sections() -> TestResult {
                 },
                 Section::Changed {
                     lines: vec![SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Added,
                         line: Cow::Borrowed("changed\n"),
                     }],
@@ -945,7 +948,7 @@ fn test_no_abbreviate_short_unchanged_sections() -> TestResult {
                 },
                 Section::Changed {
                     lines: vec![SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Added,
                         line: Cow::Borrowed("changed\n"),
                     }],
@@ -957,7 +960,7 @@ fn test_no_abbreviate_short_unchanged_sections() -> TestResult {
                 },
                 Section::Changed {
                     lines: vec![SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Added,
                         line: Cow::Borrowed("changed\n"),
                     }],
@@ -1015,7 +1018,7 @@ fn test_record_binary_file() -> TestResult {
             path: Cow::Borrowed(Path::new("foo")),
             file_mode: None,
             sections: vec![Section::Binary {
-                is_checked: false,
+                is_checked: IsChecked::new(false),
                 old_description: Some(Cow::Owned(make_binary_description("abc123", 123))),
                 new_description: Some(Cow::Owned(make_binary_description("def456", 456))),
             }],
@@ -1063,7 +1066,10 @@ fn test_record_binary_file() -> TestResult {
                 file_mode: None,
                 sections: [
                     Binary {
-                        is_checked: true,
+                        is_checked: IsChecked {
+                            init: false,
+                            current: true,
+                        },
                         old_description: Some(
                             "abc123 (123 bytes)",
                         ),
@@ -1103,7 +1109,7 @@ fn test_record_binary_file_noop() -> TestResult {
             path: Cow::Borrowed(Path::new("foo")),
             file_mode: None,
             sections: vec![Section::Binary {
-                is_checked: false,
+                is_checked: IsChecked::new(false),
                 old_description: Some(Cow::Owned(make_binary_description("abc123", 123))),
                 new_description: Some(Cow::Owned(make_binary_description("def456", 456))),
             }],
@@ -1146,7 +1152,10 @@ fn test_record_binary_file_noop() -> TestResult {
                 file_mode: None,
                 sections: [
                     Binary {
-                        is_checked: false,
+                        is_checked: IsChecked {
+                            init: false,
+                            current: false,
+                        },
                         old_description: Some(
                             "abc123 (123 bytes)",
                         ),
@@ -1186,13 +1195,13 @@ fn test_state_binary_selected_contents() -> TestResult {
             sections: vec![
                 Section::Changed {
                     lines: vec![SectionChangedLine {
-                        is_checked,
+                        is_checked: IsChecked::new(is_checked),
                         change_type: ChangeType::Removed,
                         line: Cow::Borrowed("foo\n"),
                     }],
                 },
                 Section::Binary {
-                    is_checked: binary,
+                    is_checked: IsChecked::new(binary),
                     old_description: Some(Cow::Owned(make_binary_description("abc123", 123))),
                     new_description: Some(Cow::Owned(make_binary_description("def456", 456))),
                 },
@@ -1291,7 +1300,7 @@ fn test_mouse_click_checkbox() -> TestResult {
                 path: Cow::Borrowed(Path::new("bar")),
                 file_mode: None,
                 sections: vec![Section::FileMode {
-                    is_checked: false,
+                    is_checked: IsChecked::new(false),
                     before: FileMode::absent(),
                     after: FileMode(0o100644),
                 }],
@@ -1351,13 +1360,13 @@ fn test_mouse_click_wide_line() -> TestResult {
             file_mode: None,
             sections: vec![
                 Section::FileMode {
-                    is_checked: false,
+                    is_checked: IsChecked::new(false),
                     before: FileMode::absent(),
                     after: FileMode(0o100644),
                 },
                 Section::Changed {
                     lines: vec![SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Removed,
                         line: Cow::Borrowed("foo\n"),
                     }],
@@ -1441,7 +1450,7 @@ fn test_mouse_click_dialog_buttons() -> TestResult {
             file_mode: None,
             sections: vec![Section::Changed {
                 lines: vec![SectionChangedLine {
-                    is_checked: true,
+                    is_checked: IsChecked::set(),
                     change_type: ChangeType::Removed,
                     line: Cow::Borrowed("foo\n"),
                 }],
@@ -2413,22 +2422,34 @@ fn test_read_only() -> TestResult {
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Removed,
                                 line: "before text 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Removed,
                                 line: "before text 2\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Added,
                                 line: "after text 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "after text 2\n",
                             },
@@ -2455,22 +2476,34 @@ fn test_read_only() -> TestResult {
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Removed,
                                 line: "before text 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Removed,
                                 line: "before text 2\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Added,
                                 line: "after text 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Added,
                                 line: "after text 2\n",
                             },
@@ -2563,22 +2596,34 @@ fn test_toggle_unchanged_line() -> TestResult {
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Removed,
                                 line: "before text 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Removed,
                                 line: "before text 2\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Added,
                                 line: "after text 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "after text 2\n",
                             },
@@ -2605,22 +2650,34 @@ fn test_toggle_unchanged_line() -> TestResult {
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Removed,
                                 line: "before text 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Removed,
                                 line: "before text 2\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Added,
                                 line: "after text 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: true,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: true,
+                                },
                                 change_type: Added,
                                 line: "after text 2\n",
                             },
@@ -2655,7 +2712,7 @@ fn test_max_file_view_width() -> TestResult {
                 },
                 Section::Changed {
                     lines: vec![SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Added,
                         line: Cow::Owned("very ".repeat(100)),
                     }],
@@ -3349,52 +3406,52 @@ fn test_tabs_in_files() -> TestResult {
                 Section::Changed {
                     lines: vec![
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("before text\t1\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("after text 1\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("before text 2\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("after text\t2\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("\tbefore text 3\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("\tafter text\t3\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("\tbefore text\t4\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("\tafter text 4\n"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Removed,
                             line: Cow::Borrowed("\tbefore text\t5"),
                         },
                         SectionChangedLine {
-                            is_checked: true,
+                            is_checked: IsChecked::set(),
                             change_type: ChangeType::Added,
                             line: Cow::Borrowed("\tafter text\t5"),
                         },
@@ -3451,12 +3508,12 @@ fn test_carriage_return() -> TestResult {
             sections: vec![Section::Changed {
                 lines: vec![
                     SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Removed,
                         line: Cow::Borrowed("before text\n"),
                     },
                     SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Added,
                         line: Cow::Borrowed("before text\r\n"),
                     },
@@ -3533,7 +3590,7 @@ fn test_some_control_characters() -> TestResult {
             file_mode: None,
             sections: vec![Section::Changed {
                 lines: vec![SectionChangedLine {
-                    is_checked: false,
+                    is_checked: IsChecked::new(false),
                     change_type: ChangeType::Added,
                     line: Cow::Borrowed("nul:\0, bel:\x07, esc:\x1b, del:\x7f\n"),
                 }],
@@ -3575,7 +3632,7 @@ fn test_non_printing_characters() -> TestResult {
             file_mode: None,
             sections: vec![Section::Changed {
                 lines: vec![SectionChangedLine {
-                    is_checked: false,
+                    is_checked: IsChecked::new(false),
                     change_type: ChangeType::Added,
                     line: Cow::Borrowed("zwj:\u{200d}, zwnj:\u{200c}"),
                 }],

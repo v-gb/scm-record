@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::path::PathBuf;
 
 use scm_record::helpers::make_binary_description;
-use scm_record::{ChangeType, File, FileMode, Section, SectionChangedLine};
+use scm_record::{ChangeType, File, FileMode, IsChecked, Section, SectionChangedLine};
 use tracing::warn;
 
 use super::{Error, FileContents, FileInfo, Filesystem};
@@ -14,7 +14,7 @@ fn make_section_changed_lines(
     contents
         .split_inclusive('\n')
         .map(|line| SectionChangedLine {
-            is_checked: false,
+            is_checked: IsChecked::new(false),
             change_type,
             line: Cow::Owned(line.to_owned()),
         })
@@ -43,7 +43,7 @@ pub fn create_file(
         && right_file_mode != FileMode::absent()
     {
         sections.push(Section::FileMode {
-            is_checked: false,
+            is_checked: IsChecked::new(false),
             before: left_file_mode,
             after: right_file_mode,
         });
@@ -64,7 +64,7 @@ pub fn create_file(
 
         (FileContents::Absent, FileContents::Binary { hash, num_bytes }) => {
             sections.push(Section::Binary {
-                is_checked: false,
+                is_checked: IsChecked::new(false),
                 old_description: None,
                 new_description: Some(Cow::Owned(make_binary_description(&hash, num_bytes))),
             })
@@ -116,7 +116,7 @@ pub fn create_file(
                 num_bytes: new_num_bytes,
             },
         ) => sections.push(Section::Binary {
-            is_checked: false,
+            is_checked: IsChecked::new(false),
             old_description: Some(Cow::Owned(make_binary_description(
                 &old_hash,
                 old_num_bytes,
@@ -129,7 +129,7 @@ pub fn create_file(
 
         (FileContents::Binary { hash, num_bytes }, FileContents::Absent) => {
             sections.push(Section::Binary {
-                is_checked: false,
+                is_checked: IsChecked::new(false),
                 old_description: Some(Cow::Owned(make_binary_description(&hash, num_bytes))),
                 new_description: None,
             })
@@ -245,7 +245,7 @@ fn create_diff(old_contents: &str, new_contents: &str) -> Vec<Section<'static>> 
                 },
                 diffy::Line::Delete(line) => {
                     let line = SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Removed,
                         line: Cow::Owned((*line).to_owned()),
                     };
@@ -260,7 +260,7 @@ fn create_diff(old_contents: &str, new_contents: &str) -> Vec<Section<'static>> 
                 }
                 diffy::Line::Insert(line) => {
                     let line = SectionChangedLine {
-                        is_checked: false,
+                        is_checked: IsChecked::new(false),
                         change_type: ChangeType::Added,
                         line: Cow::Owned((*line).to_owned()),
                     };
@@ -458,7 +458,7 @@ fn create_merge(
                                 .map(|line| (line, ChangeType::Added)),
                         )
                         .map(|(line, change_type)| SectionChangedLine {
-                            is_checked: false,
+                            is_checked: IsChecked::new(false),
                             change_type,
                             line,
                         })

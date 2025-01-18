@@ -692,12 +692,18 @@ qux2
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Removed,
                                 line: "foo\n",
                             },
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "qux1\n",
                             },
@@ -712,12 +718,18 @@ qux2
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Removed,
                                 line: "bar\n",
                             },
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "qux2\n",
                             },
@@ -874,7 +886,10 @@ qux2
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "right\n",
                             },
@@ -950,7 +965,10 @@ qux2
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Removed,
                                 line: "left\n",
                             },
@@ -1214,17 +1232,26 @@ Hello world 4
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "Hello world L\n",
                             },
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Removed,
                                 line: "Hello world 3\n",
                             },
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "Hello world R\n",
                             },
@@ -1341,12 +1368,18 @@ Hello world 2
                     Changed {
                         lines: [
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "Hello world 1\n",
                             },
                             SectionChangedLine {
-                                is_checked: false,
+                                is_checked: IsChecked {
+                                    init: false,
+                                    current: false,
+                                },
                                 change_type: Added,
                                 line: "Hello world 2\n",
                             },
@@ -1409,7 +1442,7 @@ Hello world 2
 
         // Select only some changes from new file.
         match files[0].sections.get_mut(0).unwrap() {
-            Section::Changed { ref mut lines } => lines[0].is_checked = false,
+            Section::Changed { ref mut lines } => lines[0].is_checked.current = false,
             _ => panic!("Expected changed section"),
         }
         apply_changes(
